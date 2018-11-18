@@ -167,6 +167,14 @@ namespace MalModernUi.ViewModel
             return returnValue;
         }
 
+        public ImageSource MicrophoneImage
+        {
+            get
+            {
+                return ImageSource.FromResource("MalModernUi.images.baseline_mic_none_black_18dp.png");
+            }
+        }
+
         private string GetVSTSItemName(string entityName)
         {
             var returnValue = "";

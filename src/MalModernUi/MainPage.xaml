@@ -6,6 +6,7 @@
         <Label x:Name="lblConversation" VerticalOptions="FillAndExpand" Text="{Binding AppReplies}" LineBreakMode="WordWrap" VerticalTextAlignment="End" />
         <StackLayout Orientation="Horizontal" >
             <Entry x:Name="txtDialog" VerticalOptions="End" HorizontalOptions="FillAndExpand" Text="{Binding UserText}"/>
+            <ImageButton Source="{Binding MicrophoneImage}" WidthRequest="50" />
             <Button x:Name="cmdSend" Text="Send" HorizontalOptions="End" Command="{Binding SendText}" />
         </StackLayout>
     </StackLayout>
