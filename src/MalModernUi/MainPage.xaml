@@ -1,12 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ContentPage xmlns="http://xamarin.com/schemas/2014/forms" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:local="clr-namespace:MalModernUi" x:Class="MalModernUi.MainPage">
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" 
+             xmlns:local="clr-namespace:MalModernUi" 
+             x:Class="MalModernUi.MainPage"
+             xmlns:converters="clr-namespace:MalModernUi.ValueConverters;assembly=MalModernUi">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:AlignmentValueConverter x:Key="AlignmentValueConverter" />
+            <converters:ColorValueConverter x:Key="ColorValueConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
     <StackLayout Orientation="Vertical">
         <!-- Place new controls here -->
         <Label Text="What do you want to do?" HorizontalOptions="Start" VerticalOptions="Start" />
-        <Label x:Name="lblConversation" VerticalOptions="FillAndExpand" Text="{Binding AppReplies}" LineBreakMode="WordWrap" VerticalTextAlignment="End" />
+        <ListView x:Name="lstConversation" VerticalOptions="FillAndExpand" ItemsSource="{Binding AppConversation}" SeparatorVisibility="None" SelectionMode="None">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <StackLayout Orientation="Horizontal" Margin="5,10,5,10" BackgroundColor="{Binding ClientMessage, Converter={StaticResource ColorValueConverter}}" Padding="3,3,3,3">
+                            <Label Text="{Binding Message}" HorizontalOptions="FillAndExpand" HorizontalTextAlignment="{Binding ClientMessage, Converter={StaticResource AlignmentValueConverter}}" TextColor="White"  />
+                        </StackLayout>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
         <StackLayout Orientation="Horizontal" >
             <Entry x:Name="txtDialog" VerticalOptions="End" HorizontalOptions="FillAndExpand" Text="{Binding UserText}"/>
-            <ImageButton Source="{Binding MicrophoneImage}" WidthRequest="50" />
+            <ImageButton Source="{Binding MicrophoneImage}" WidthRequest="40" HorizontalOptions="Fill" VerticalOptions="Fill" />
             <Button x:Name="cmdSend" Text="Send" HorizontalOptions="End" Command="{Binding SendText}" />
         </StackLayout>
     </StackLayout>

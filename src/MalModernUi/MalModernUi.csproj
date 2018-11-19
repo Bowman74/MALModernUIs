@@ -18,6 +18,7 @@
     <Folder Include="ViewModel\" />
     <Folder Include="Constants\" />
     <Folder Include="Models\" />
+    <Folder Include="ValueConverters\" />
     <Folder Include="images\" />
   </ItemGroup>
   <ItemGroup>
