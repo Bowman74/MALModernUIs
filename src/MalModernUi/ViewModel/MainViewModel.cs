@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using MalModernUi.Constants;
 using MalModernUi.Models;
 using Xamarin.Forms;
+using System.Collections.ObjectModel;
 
 namespace MalModernUi.ViewModel
 {
@@ -16,6 +17,7 @@ namespace MalModernUi.ViewModel
 
         public MainViewModel()
         {
+            AppConversation = new ObservableCollection<ConversationItem>();
         }
 
         private Command _sendText;
@@ -48,19 +50,19 @@ namespace MalModernUi.ViewModel
             }
         }
 
-        private string _AppReplies;
-        public string AppReplies
+        private ObservableCollection<ConversationItem> _AppConversation;
+        public ObservableCollection<ConversationItem> AppConversation
         {
             get
             {
-                return _AppReplies;
+                return _AppConversation;
             }
-            set
+            private set
             {
-                if (_AppReplies != value)
+                if (_AppConversation != value)
                 {
-                    _AppReplies = value;
-                    PropertyIsChanged(nameof(AppReplies));
+                    _AppConversation = value;
+                    PropertyIsChanged(nameof(AppConversation));
                 }
             }
         }
@@ -73,6 +75,8 @@ namespace MalModernUi.ViewModel
             {
                 var requestText = UserText;
                 UserText = string.Empty;
+
+                AddNewMessage(requestText, true);
                 var url = $"{Url.NaturalLanguageEndpoint}?subscription-key={Url.NaturalLanguageKey}&timezoneOffset=-360&q={HttpUtility.UrlEncode(requestText)}";
 
                 var request = WebRequest.Create(url);
@@ -84,7 +88,7 @@ namespace MalModernUi.ViewModel
             }
             catch (WebException)
             {
-                AddNewReply("I'm sorry, I encountered a network error calling into LUIS.");
+                AddNewMessage("I'm sorry, I encountered a network error calling into LUIS.", false);
             }
         }
 
@@ -109,7 +113,7 @@ namespace MalModernUi.ViewModel
                         }
                         break;
                     default:
-                        AddNewReply("I don't understand what you are asking for...");
+                        AddNewMessage("I don't understand what you are asking for...", false);
                         break;
                 }
             }
@@ -129,7 +133,7 @@ namespace MalModernUi.ViewModel
                 var vstsItemName = GetVSTSItemName(itemType);
                 if (string.IsNullOrEmpty(vstsItemName))
                 {
-                    AddNewReply($"I don't know how to create an item named {itemType}.");
+                    AddNewMessage($"I don't know how to create an item named {itemType}.", false);
                 }
                 var url = $"{Url.VsDevOpsEnpoint}/_apis/wit/workitems/${vstsItemName}?api-version=4.1";
                 string content= $"[{{'op': 'add','path': '/fields/System.Title','from': null,'value': 'Test {itemType}'}}]";
@@ -154,14 +158,14 @@ namespace MalModernUi.ViewModel
                     {
                         string responseText = reader.ReadToEnd();
                         var doResponse = JsonConvert.DeserializeObject<DevOpsResponse>(responseText);
-                        AddNewReply($"I've added a new {itemType} with an id of {doResponse.id}.");
+                        AddNewMessage($"I've added a new {itemType} with an id of {doResponse.id}.", false);
                     }
                 }
 
             }
             catch (WebException)
             {
-                AddNewReply("I'm sorry, I encountered a network error creating the new Dev Ops item.");
+                AddNewMessage("I'm sorry, I encountered a network error creating the new Dev Ops item.", false);
             }
 
             return returnValue;
@@ -205,9 +209,14 @@ namespace MalModernUi.ViewModel
             }
             return returnValue;
         }
-        private void AddNewReply(string reply)
+
+        private void AddNewMessage(string message, bool client)
         {
-            AppReplies = AppReplies + "\n\r\n\r" + reply;
+            AppConversation.Add(new ConversationItem
+            {
+                Message = message,
+                ClientMessage = client
+            });
         }
     }
 }
