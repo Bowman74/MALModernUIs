@@ -9,6 +9,8 @@ using Android.OS;
 using Android.Support.V4.Content;
 using Android.Support.V4.App;
 using Android;
+using Plugin.Permissions;
+using Plugin.CurrentActivity;
 
 namespace MalModernUi.Droid
 {
@@ -19,6 +21,7 @@ namespace MalModernUi.Droid
         {
             TabLayoutResource = Resource.Layout.Tabbar;
             ToolbarResource = Resource.Layout.Toolbar;
+            Plugin.CurrentActivity.CrossCurrentActivity.Current.Activity = this;
 
             if (ContextCompat.CheckSelfPermission(this, Manifest.Permission.RecordAudio) != Permission.Granted)
             {
@@ -28,6 +31,11 @@ namespace MalModernUi.Droid
             base.OnCreate(savedInstanceState);
             global::Xamarin.Forms.Forms.Init(this, savedInstanceState);
             LoadApplication(new App());
+        }
+
+        public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
+        {
+            PermissionsImplementation.Current.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 }

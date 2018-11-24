@@ -12,8 +12,11 @@ namespace MalModernUi.Constants
         public const string VsDevOpsKey = "Enterhere";
 
         public const string TokenServiceEndpoint = "https://westus.api.cognitive.microsoft.com/sts/v1.0/issuetoken";
-             
+
         public const string SpeechEndpoint = "https://westus.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1";
         public const string SpeechKey = "Enterhere";
+
+        public const string VisionEndpoint = "https://eastus2.api.cognitive.microsoft.com/vision/v2.0";
+        public const string VisionKey = "Enterhere";
     }
 }
