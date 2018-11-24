@@ -8,6 +8,10 @@ using MalModernUi.Constants;
 using MalModernUi.Models;
 using Xamarin.Forms;
 using System.Collections.ObjectModel;
+using Plugin.AudioRecorder;
+using System;
+using System.Net.Http;
+using System.IO;
 
 namespace MalModernUi.ViewModel
 {
@@ -15,9 +19,29 @@ namespace MalModernUi.ViewModel
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
+        private AudioRecorderService _recorder;
+
         public MainViewModel()
         {
             AppConversation = new ObservableCollection<ConversationItem>();
+            if (_recorder == null)
+            {
+                _recorder = new AudioRecorderService
+                {
+                    PreferredSampleRate = 16000,
+                    StopRecordingOnSilence = true, //will stop recording after 2 seconds (default)
+                    StopRecordingAfterTimeout = true,  //stop recording after a max timeout (defined below)
+                    TotalAudioTimeout = TimeSpan.FromSeconds(15) //audio will stop recording after 15 seconds
+                };
+            }
+            _recorder.AudioInputReceived += Done_Recording;
+        }
+
+        private async void Done_Recording(object sender, string audioFile)
+        {
+            //var token = await FetchTokenAsync();
+            await RecognizeSpeechAsync(audioFile);
+
         }
 
         private Command _sendText;
@@ -30,6 +54,50 @@ namespace MalModernUi.ViewModel
                     _sendText = new Command(async () => await SendTextAsync());
             }
                 return _sendText;
+            }
+        }
+
+        private Command _toggleRecording;
+        public Command ToggleRecording
+        {
+            get
+            {
+                if (_toggleRecording == null)
+                {
+                    _toggleRecording = new Command(async () => await ToggleRecordingAsync());
+                }
+                return _toggleRecording;
+            }
+        }
+
+        private bool _isRecording;
+        public bool IsRecording
+        {
+            get { return _isRecording; }
+            private set
+            {
+                if (_isRecording != value)
+                {
+                    _isRecording = value;
+                    PropertyIsChanged(nameof(IsRecording));
+                }
+            }
+        }
+
+        private async Task ToggleRecordingAsync()
+        {
+            if (IsRecording)
+            {
+                IsRecording = false;
+                if (_recorder.IsRecording)
+                {
+                    await _recorder.StopRecording();
+                }
+            }
+            else
+            {
+                IsRecording = true;
+                await _recorder.StartRecording();
             }
         }
 
@@ -171,14 +239,6 @@ namespace MalModernUi.ViewModel
             return returnValue;
         }
 
-        public ImageSource MicrophoneImage
-        {
-            get
-            {
-                return ImageSource.FromResource("MalModernUi.images.baseline_mic_none_black_18dp.png");
-            }
-        }
-
         private string GetVSTSItemName(string entityName)
         {
             var returnValue = "";
@@ -225,6 +285,74 @@ namespace MalModernUi.ViewModel
                 Message = message,
                 ClientMessage = client
             });
+        }
+
+        private async Task<string> FetchTokenAsync()
+        {
+            UriBuilder uriBuilder = new UriBuilder(Url.TokenServiceEndpoint);
+
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", Url.SpeechKey);
+
+            var result = await httpClient.PostAsync(uriBuilder.Uri.AbsoluteUri, null);
+            return await result.Content.ReadAsStringAsync();    
+        }
+
+        public async Task<string> RecognizeSpeechAsync(string fileName)
+        {
+            string speechResult = string.Empty;
+            try
+            {
+                // Read audio file to a stream
+                using (var fileStream = File.Open(fileName, FileMode.Open))
+                {
+                    // Send audio stream to Bing and deserialize the response
+                    var url = $"{Url.SpeechEndpoint}?language=en-US&format=simple";
+
+                    var request = (HttpWebRequest)WebRequest.Create(url);
+                    request.Method = "POST";
+                    request.ContentType = "audio/wav; codec=audio/pcm; samplerate=16000";
+                    //request.Headers.Add("Authorization", $"Bearer {accessToken}");
+                    request.Headers.Add("Ocp-Apim-Subscription-Key", Url.SpeechKey);
+                    //request.Host = "westus.stt.speech.microsoft.com";
+
+                    //var audioBytes = ReadFully(fileStream);
+
+                    var reqStream = request.GetRequestStream();
+                    await fileStream.CopyToAsync(reqStream);
+                    //await reqStream.WriteAsync(audioBytes, 0, audioBytes.Length);
+                    reqStream.Flush();
+                    reqStream.Close();
+
+                    HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
+                    if (response.StatusCode == HttpStatusCode.OK)
+                    {
+                        var encoding = ASCIIEncoding.ASCII;
+
+                        using (var reader = new System.IO.StreamReader(response.GetResponseStream(), encoding))
+                        {
+                            string responseText = reader.ReadToEnd();
+                            var doResponse = JsonConvert.DeserializeObject<VoiceResponse>(responseText);
+                            UserText = doResponse.DisplayText;
+                            await SendTextAsync();
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                var a = e;
+            }
+            return speechResult;
+        }
+
+        public static byte[] ReadFully(Stream input)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                input.CopyTo(ms);
+                return ms.ToArray();
+            }
         }
     }
 }

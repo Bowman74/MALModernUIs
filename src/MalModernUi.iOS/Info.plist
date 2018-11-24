@@ -34,5 +34,7 @@
 	<string>MalModernUi</string>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/AppIcon.appiconset</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Use microphone to send commands</string>
 </dict>
 </plist>
