@@ -8,6 +8,12 @@ using MalModernUi.Constants;
 using MalModernUi.Models;
 using Xamarin.Forms;
 using System.Collections.ObjectModel;
+using Plugin.AudioRecorder;
+using System;
+using System.Net.Http;
+using System.IO;
+using System.Net.Http.Headers;
+using System.Linq;
 
 namespace MalModernUi.ViewModel
 {
@@ -15,9 +21,29 @@ namespace MalModernUi.ViewModel
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
+        private AudioRecorderService _recorder;
+
         public MainViewModel()
         {
             AppConversation = new ObservableCollection<ConversationItem>();
+            if (_recorder == null)
+            {
+                _recorder = new AudioRecorderService
+                {
+                    PreferredSampleRate = 16000,
+                    StopRecordingOnSilence = true, //will stop recording after 2 seconds (default)
+                    StopRecordingAfterTimeout = true,  //stop recording after a max timeout (defined below)
+                    TotalAudioTimeout = TimeSpan.FromSeconds(15) //audio will stop recording after 15 seconds
+                };
+            }
+            _recorder.AudioInputReceived += Done_Recording;
+        }
+
+        private async void Done_Recording(object sender, string audioFile)
+        {
+            //var token = await FetchTokenAsync();
+            await RecognizeSpeechAsync(audioFile);
+
         }
 
         private Command _sendText;
@@ -28,14 +54,14 @@ namespace MalModernUi.ViewModel
                 if (_sendText == null)
                 {
                     _sendText = new Command(async () => await SendTextAsync());
-            }
+                }
                 return _sendText;
             }
         }
 
         private string _UserText;
-        public string UserText 
-        { 
+        public string UserText
+        {
             get
             {
                 return _UserText;
@@ -67,6 +93,7 @@ namespace MalModernUi.ViewModel
             }
         }
 
+        #region "Demo 1"
         private async Task SendTextAsync()
         {
             if (string.IsNullOrEmpty(UserText)) return;
@@ -136,7 +163,7 @@ namespace MalModernUi.ViewModel
                     AddNewMessage($"I don't know how to create an item named {itemType}.", false);
                 }
                 var url = $"{Url.VsDevOpsEnpoint}/_apis/wit/workitems/${vstsItemName}?api-version=4.1";
-                string content= $"[{{'op': 'add','path': '/fields/System.Title','from': null,'value': 'Test {itemType}'}}]";
+                string content = $"[{{'op': 'add','path': '/fields/System.Title','from': null,'value': 'Test {itemType}'}}]";
 
                 var request = WebRequest.Create(url);
                 request.Headers.Add("Authorization", $"Basic {Url.VsDevOpsKey}");
@@ -217,6 +244,241 @@ namespace MalModernUi.ViewModel
                 Message = message,
                 ClientMessage = client
             });
+        }
+#endregion
+
+        #region "Demo 2"
+        private Command _toggleRecording;
+        public Command ToggleRecording
+        {
+            get
+            {
+                if (_toggleRecording == null)
+                {
+                    _toggleRecording = new Command(async () => await ToggleRecordingAsync());
+                }
+                return _toggleRecording;
+            }
+        }
+
+        private bool _isRecording;
+        public bool IsRecording
+        {
+            get { return _isRecording; }
+            private set
+            {
+                if (_isRecording != value)
+                {
+                    _isRecording = value;
+                    PropertyIsChanged(nameof(IsRecording));
+                }
+            }
+        }
+
+        private async Task ToggleRecordingAsync()
+        {
+            if (IsRecording)
+            {
+                IsRecording = false;
+                if (_recorder.IsRecording)
+                {
+                    await _recorder.StopRecording();
+                }
+            }
+            else
+            {
+                IsRecording = true;
+                await _recorder.StartRecording();
+            }
+        }
+
+        public async Task<string> RecognizeSpeechAsync(string fileName)
+        {
+            string speechResult = string.Empty;
+            try
+            {
+                // Read audio file to a stream
+                using (var fileStream = File.Open(fileName, FileMode.Open))
+                {
+                    // Send audio stream to Bing and deserialize the response
+                    var url = $"{Url.SpeechEndpoint}?language=en-US&format=simple";
+
+                    var request = (HttpWebRequest)WebRequest.Create(url);
+                    request.Method = "POST";
+                    request.ContentType = "audio/wav; codec=audio/pcm; samplerate=16000";
+                    //request.Headers.Add("Authorization", $"Bearer {accessToken}");
+                    request.Headers.Add("Ocp-Apim-Subscription-Key", Url.SpeechKey);
+                    //request.Host = "westus.stt.speech.microsoft.com";
+
+                    //var audioBytes = ReadFully(fileStream);
+
+                    var reqStream = request.GetRequestStream();
+                    await fileStream.CopyToAsync(reqStream);
+                    //await reqStream.WriteAsync(audioBytes, 0, audioBytes.Length);
+                    reqStream.Flush();
+                    reqStream.Close();
+
+                    HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
+                    if (response.StatusCode == HttpStatusCode.OK)
+                    {
+                        var encoding = ASCIIEncoding.ASCII;
+
+                        using (var reader = new System.IO.StreamReader(response.GetResponseStream(), encoding))
+                        {
+                            string responseText = reader.ReadToEnd();
+                            var doResponse = JsonConvert.DeserializeObject<VoiceResponse>(responseText);
+                            UserText = doResponse.DisplayText;
+                            await SendTextAsync();
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                AddNewMessage("I'm sorry, I encountered a network error evaluating the voice input.", false);
+            }
+            return speechResult;
+        }
+
+        public static byte[] ReadFully(Stream input)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                input.CopyTo(ms);
+                return ms.ToArray();
+            }
+        }
+
+#endregion
+
+        #region "Demo 3"
+        private Command _takePicture;
+        public Command TakePicture
+        {
+            get
+            {
+                if (_takePicture == null)
+                {
+                    _takePicture = new Command(async () => await TakePictureAsync());
+                }
+                return _takePicture;
+            }
+        }
+
+        private async Task TakePictureAsync()
+        {
+            var options = new Plugin.Media.Abstractions.StoreCameraMediaOptions();
+            options.PhotoSize = Plugin.Media.Abstractions.PhotoSize.MaxWidthHeight;
+            options.MaxWidthHeight = 1000;
+            var photo = await Plugin.Media.CrossMedia.Current.TakePhotoAsync(options);
+
+            if (photo != null)
+            {
+                using (var imageStream = photo.GetStream())
+                {
+                    await RecognizeImageWritingAsync(imageStream);
+                }
+            }
+        }
+
+        public async Task<string> RecognizeImageWritingAsync(Stream imageStream)
+        {
+            string imageResult = string.Empty;
+            //HttpWebResponse response = null;
+            try
+            {
+                // Send audio stream to Bing and deserialize the response
+                var url = $"{Url.VisionEndpoint}/recognizeText?mode=Handwritten";
+
+                var client = new HttpClient();
+                client.DefaultRequestHeaders.Add(
+                    "Ocp-Apim-Subscription-Key", Url.VisionKey);
+
+                HttpResponseMessage response;
+                byte[] b;
+                string operationLocation = string.Empty;
+
+                using (BinaryReader br = new BinaryReader(imageStream))
+                {
+                    b = br.ReadBytes((int)imageStream.Length);
+                }
+                using (ByteArrayContent content = new ByteArrayContent(b))
+                {
+                    string contentString = string.Empty;
+                    content.Headers.ContentType =
+                        new MediaTypeHeaderValue("application/octet-stream");
+
+                    response = await client.PostAsync(url, content);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        operationLocation = response.Headers.GetValues("Operation-Location").FirstOrDefault();
+
+                        if (operationLocation != string.Empty)
+                        {
+                            int i = 0;
+                            do
+                            {
+                                System.Threading.Thread.Sleep(1000);
+                                response = await client.GetAsync(operationLocation);
+                                contentString = await response.Content.ReadAsStringAsync();
+                                ++i;
+                            }
+                            while (i < 10 && contentString.IndexOf("\"status\":\"Succeeded\"", StringComparison.CurrentCulture) == -1);
+
+                            if (i == 10 && contentString.IndexOf("\"status\":\"Succeeded\"", StringComparison.CurrentCulture) == -1)
+                            {
+                                AddNewMessage("Timeout error analyzing message", false);
+                            }
+                        }
+
+                        var doResponse = JsonConvert.DeserializeObject<VisionResponse>(contentString);
+                        string allLines = string.Empty;
+                        foreach (var line in doResponse.RecognitionResult.Lines)
+                        {
+                            if (!string.IsNullOrEmpty(allLines))
+                            {
+                                allLines += " ";
+                            }
+                            allLines += line.Text;
+                        }
+                        if (!string.IsNullOrEmpty(allLines))
+                        {
+                            UserText = allLines;
+                            await SendTextAsync();
+                        }
+                    }
+                    else
+                    {
+                        // Display the JSON error data.
+                        string errorString = await response.Content.ReadAsStringAsync();
+                        AddNewMessage(errorString, false);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                AddNewMessage("I'm sorry, I encountered a network error evaluating the image.", false);
+            }
+            return imageResult;
+        }
+        #endregion "Demo 3"
+
+        private Command _showAr;
+        public Command ShowAr
+        {
+            get
+            {
+                if (_showAr == null)
+                {
+                    _showAr = new Command(async () => await ShowArViewAsync());
+                }
+                return _showAr;
+            }
+        }
+
+        private async Task ShowArViewAsync()
+        {
+            await App.GetNavigationPage().Navigation.PushAsync(new ArView());
         }
     }
 }

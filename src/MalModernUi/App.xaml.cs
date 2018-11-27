@@ -11,7 +11,15 @@ namespace MalModernUi
         {
             InitializeComponent();
 
-            MainPage = new MainPage();
+            navigationPage = new NavigationPage(new MainPage());
+            MainPage = navigationPage;
+        }
+
+        private static NavigationPage navigationPage;
+
+        public static NavigationPage GetNavigationPage()
+        {
+            return navigationPage;
         }
 
         protected override void OnStart()
@@ -28,5 +36,6 @@ namespace MalModernUi
         {
             // Handle when your app resumes
         }
+
     }
 }

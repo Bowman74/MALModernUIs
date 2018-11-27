@@ -12,11 +12,32 @@
   <ItemGroup>
     <PackageReference Include="Xamarin.Forms" Version="3.4.0.1008975" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Plugin.AudioRecorder" Version="1.1.0" />
+    <PackageReference Include="Xam.Plugin.Media" Version="3.1.3" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ViewModel\" />
     <Folder Include="Constants\" />
     <Folder Include="Models\" />
     <Folder Include="ValueConverters\" />
+    <Folder Include="images\" />
+    <Folder Include="Interfaces\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="images\baseline_mic_black_18dp.png" />
+    <None Remove="images\baseline_mic_none_black_18dp.png" />
+    <None Remove="Models\VisionResponse.xml" />
+    <None Remove="images\baseline_camera_enhance_black_18dp.png" />
+    <None Remove="images\baseline_photo_camera_black_18dp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="images\baseline_mic_black_18dp.png" />
+    <EmbeddedResource Include="images\baseline_mic_none_black_18dp.png" />
+    <EmbeddedResource Include="images\baseline_camera_enhance_black_18dp.png" />
+    <EmbeddedResource Include="images\baseline_photo_camera_black_18dp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Extensions\ImageResourceExtension.cs" />
+    <Compile Remove="ARView.cs" />
   </ItemGroup>
 </Project>
