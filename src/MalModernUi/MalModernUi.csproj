@@ -21,19 +21,23 @@
     <Folder Include="Models\" />
     <Folder Include="ValueConverters\" />
     <Folder Include="images\" />
+    <Folder Include="Interfaces\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="images\baseline_mic_black_18dp.png" />
     <None Remove="images\baseline_mic_none_black_18dp.png" />
-    <None Remove="images\baseline_photo_camera_black_18dp.png" />
     <None Remove="Models\VisionResponse.xml" />
+    <None Remove="images\baseline_camera_enhance_black_18dp.png" />
+    <None Remove="images\baseline_photo_camera_black_18dp.png" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="images\baseline_mic_black_18dp.png" />
     <EmbeddedResource Include="images\baseline_mic_none_black_18dp.png" />
+    <EmbeddedResource Include="images\baseline_camera_enhance_black_18dp.png" />
     <EmbeddedResource Include="images\baseline_photo_camera_black_18dp.png" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Extensions\ImageResourceExtension.cs" />
+    <Compile Remove="ARView.cs" />
   </ItemGroup>
 </Project>

@@ -28,6 +28,7 @@
         </ListView>
         <StackLayout Orientation="Horizontal" >
             <Entry x:Name="txtDialog" VerticalOptions="End" HorizontalOptions="FillAndExpand" Text="{Binding UserText}"/>
+            <ImageButton Source="{converters:ImageResource MalModernUi.images.baseline_camera_enhance_black_18dp.png}" Command="{Binding ShowAr}" WidthRequest="40" HorizontalOptions="Fill" VerticalOptions="Fill" />
             <ImageButton Source="{converters:ImageResource MalModernUi.images.baseline_photo_camera_black_18dp.png}" Command="{Binding TakePicture}" WidthRequest="40" HorizontalOptions="Fill" VerticalOptions="Fill" />
             <ImageButton Source="{Binding IsRecording, Converter={StaticResource RecordImageValueConverter}}" Command="{Binding ToggleRecording}" WidthRequest="40" HorizontalOptions="Fill" VerticalOptions="Fill" />
             <Button x:Name="cmdSend" Text="Send" HorizontalOptions="End" Command="{Binding SendText}" />

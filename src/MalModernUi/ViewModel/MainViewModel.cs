@@ -461,6 +461,24 @@ namespace MalModernUi.ViewModel
             }
             return imageResult;
         }
-#endregion "Demo 3"
+        #endregion "Demo 3"
+
+        private Command _showAr;
+        public Command ShowAr
+        {
+            get
+            {
+                if (_showAr == null)
+                {
+                    _showAr = new Command(async () => await ShowArViewAsync());
+                }
+                return _showAr;
+            }
+        }
+
+        private async Task ShowArViewAsync()
+        {
+            await App.GetNavigationPage().Navigation.PushAsync(new ArView());
+        }
     }
 }
